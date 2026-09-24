@@ -1,0 +1,13 @@
+# Production overrides: baked image, no bind mount, DB not exposed publicly.
+services:
+  api:
+    build:
+      target: production
+    restart: unless-stopped
+    volumes: !reset []
+    ports: !override
+      - "${API_PORT:-8000}:8080"
+
+  db:
+    restart: unless-stopped
+    ports: !reset []
