@@ -21,8 +21,9 @@ echo "==> ensure reverse-proxy route for $API_HOST"
 MARKER="# >>> ecotrail-api (managed by ecotrail-backend/deploy/deploy.sh)"
 if ! grep -qF "$MARKER" "$PROXY_CADDYFILE"; then
   # Append in place (tee -a keeps the inode, so the container's bind mount sees the change).
+  TEE=(tee -a); [ -w "$PROXY_CADDYFILE" ] || TEE=(sudo tee -a)
   printf '\n%s\n%s {\n\tencode zstd gzip\n\treverse_proxy ecotrail-api:8080\n}\n# <<< ecotrail-api\n' "$MARKER" "$API_HOST" \
-    | sudo tee -a "$PROXY_CADDYFILE" >/dev/null
+    | "${TEE[@]}" "$PROXY_CADDYFILE" >/dev/null
   docker exec "$PROXY_CONTAINER" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
   docker exec "$PROXY_CONTAINER" caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
   echo "    route added"
