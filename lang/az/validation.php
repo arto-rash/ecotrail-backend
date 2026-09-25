@@ -17,6 +17,7 @@ return [
         'numeric' => ':attribute :max-dan böyük ola bilməz.',
         'string' => ':attribute :max simvoldan uzun ola bilməz.',
     ],
+    'multiple_of' => ':attribute :value-in misli olmalıdır.',
     'min' => [
         'numeric' => ':attribute ən azı :min olmalıdır.',
         'string' => ':attribute ən azı :min simvol olmalıdır.',
@@ -28,7 +29,7 @@ return [
     'url' => ':attribute düzgün link olmalıdır.',
 
     'attributes' => [
-        'name' => 'ad', 'author_name' => 'ad', 'rating' => 'qiymət', 'body' => 'rəy',
+        'name' => 'ad', 'author_name' => 'ad', 'rating' => 'reytinq', 'body' => 'rəy',
         'email' => 'e-poçt', 'phone' => 'telefon', 'website' => 'veb sayt', 'message' => 'mesaj',
         'region_id' => 'region', 'district_id' => 'rayon', 'description' => 'təsvir', 'difficulty' => 'çətinlik',
         'route_type' => 'marşrut növü', 'distance_km' => 'məsafə', 'duration_minutes' => 'müddət',

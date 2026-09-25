@@ -11,7 +11,7 @@ class Review extends Model
 {
     protected function casts(): array
     {
-        return ['rating' => 'integer'];
+        return ['rating' => 'float'];
     }
 
     public function reviewable(): MorphTo

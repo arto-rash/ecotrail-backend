@@ -19,6 +19,7 @@ Route::get('/trails', [TrailController::class, 'index']);
 Route::post('/trails', [TrailController::class, 'store'])->middleware('throttle:10,60');
 Route::get('/trails/{trail}', [TrailController::class, 'show']);
 Route::get('/trails/{trail}/nearby', [TrailController::class, 'nearby']);
+Route::get('/trails/{trail}/gpx', [TrailController::class, 'gpx']);
 Route::post('/trails/{trail}/reviews', [ReviewController::class, 'storeForTrail'])->middleware('throttle:5,60');
 
 Route::get('/places', [PlaceController::class, 'index']);

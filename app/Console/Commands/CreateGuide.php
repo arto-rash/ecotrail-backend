@@ -16,12 +16,18 @@ use function Laravel\Prompts\select;
 use function Laravel\Prompts\text;
 use function Laravel\Prompts\textarea;
 
-#[Signature('guides:create {--from-application= : Prefill from a guide application id} {--list-applications : Show received applications}')]
+#[Signature('guides:create {--from-application= : Prefill from a guide application id} {--list-applications : Show received applications} {--remove-samples : Delete the sample listings}')]
 #[Description('List a verified partner guide on the site')]
 class CreateGuide extends Command
 {
     public function handle(): int
     {
+        if ($this->option('remove-samples')) {
+            $this->info('Removed '.Guide::where('is_sample', true)->delete().' sample listing(s).');
+
+            return self::SUCCESS;
+        }
+
         if ($this->option('list-applications')) {
             $this->table(['Id', 'Name', 'Kind', 'Email', 'Regions', 'Status', 'Date'], GuideApplication::latest()->get()->map(fn ($a) => [
                 $a->id, $a->name, $a->kind, $a->email, implode(', ', $a->regions ?? []), $a->status, $a->created_at->toDateString(),

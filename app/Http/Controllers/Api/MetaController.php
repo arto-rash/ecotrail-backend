@@ -38,7 +38,7 @@ class MetaController extends Controller
 
     public function guides(): AnonymousResourceCollection
     {
-        return GuideResource::collection(Guide::query()->orderByDesc('is_verified')->orderBy('name')->get());
+        return GuideResource::collection(Guide::query()->orderBy('is_sample')->orderByDesc('is_verified')->orderBy('name')->get());
     }
 
     public function stats(): JsonResponse
@@ -51,7 +51,7 @@ class MetaController extends Controller
             'regions' => EconomicRegion::query()->whereHas('places')->orWhereHas('trails')->count(),
             'total_km' => (int) round((float) (clone $published)->where('source', 'osm')->sum('distance_km')),
             'reviews' => Review::where('status', 'published')->count(),
-            'guides' => Guide::count(),
+            'guides' => Guide::where('is_sample', false)->count(),
         ]]);
     }
 

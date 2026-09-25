@@ -56,6 +56,16 @@ class ApiTest extends TestCase
             ->assertJsonStructure(['data' => ['elevation_profile' => [[0, 1]], 'sources' => [['label', 'url', 'license']], 'places']]);
 
         $this->getJson('/api/trails/goygol-maralgol/nearby')->assertOk()->assertJsonCount(3, 'data');
+
+        $gpx = $this->get('/api/trails/goygol-maralgol/gpx')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/gpx+xml')
+            ->assertHeader('Content-Disposition', 'attachment; filename="goygol-maralgol.gpx"')
+            ->getContent();
+        $xml = simplexml_load_string($gpx);
+        $this->assertSame('1.1', (string) $xml['version']);
+        $this->assertGreaterThan(20, count($xml->trk->trkseg->trkpt));
+        $this->get('/api/trails/nope/gpx')->assertNotFound();
     }
 
     public function test_places_filters_and_detail(): void
@@ -91,17 +101,20 @@ class ApiTest extends TestCase
     {
         $this->getJson('/api/trails/qamarvan')->assertJsonPath('data.reviews_count', 0)->assertJsonPath('data.rating', null);
 
-        $this->postJson('/api/trails/qamarvan/reviews?lang=en', ['author_name' => 'Nara', 'rating' => 5, 'body' => 'Lovely short walk above the village.'])
-            ->assertCreated()->assertJsonPath('data.locale', 'en');
+        $this->postJson('/api/trails/qamarvan/reviews?lang=en', ['author_name' => 'Nara', 'rating' => 4.5, 'body' => 'Lovely short walk above the village.'])
+            ->assertCreated()->assertJsonPath('data.locale', 'en')->assertJsonPath('data.rating', 4.5);
+
+        $this->postJson('/api/trails/qamarvan/reviews', ['author_name' => 'Nara', 'rating' => 3.3, 'body' => 'Quarter stars are not a thing.'])
+            ->assertUnprocessable()->assertJsonValidationErrors('rating');
 
         $this->postJson('/api/trails/qamarvan/reviews', ['author_name' => 'Bot', 'rating' => 5, 'body' => 'Buy cheap stuff here now', 'website' => 'http://spam'])
             ->assertUnprocessable()->assertJsonValidationErrors('website');
 
         $this->postJson('/api/trails/qamarvan/reviews?lang=az', ['author_name' => 'A', 'rating' => 9, 'body' => 'x'])
             ->assertUnprocessable()
-            ->assertJsonPath('errors.rating.0', 'qiymət 1 ilə 5 arasında olmalıdır.');
+            ->assertJsonPath('errors.rating.0', 'reytinq 0.5 ilə 5 arasında olmalıdır.');
 
-        $this->getJson('/api/trails/qamarvan')->assertJsonPath('data.reviews_count', 1)->assertJsonPath('data.rating', 5);
+        $this->getJson('/api/trails/qamarvan')->assertJsonPath('data.reviews_count', 1)->assertJsonPath('data.rating', 4.5);
 
         $place = Place::first()->slug;
         $this->postJson("/api/places/$place/reviews", ['author_name' => 'Leyla', 'rating' => 4, 'body' => 'Worth the detour in spring.'])->assertCreated();
@@ -133,6 +146,12 @@ class ApiTest extends TestCase
     public function test_guide_applications_and_stats(): void
     {
         $this->getJson('/api/guides')->assertOk()->assertJsonCount(0, 'data');
+
+        $this->seed(\Database\Seeders\SampleGuidesSeeder::class);
+        $this->getJson('/api/guides?lang=az')->assertJsonCount(6, 'data')
+            ->assertJsonPath('data.0.is_sample', true)->assertJsonPath('data.0.email', null)->assertJsonPath('data.0.is_verified', false);
+        $this->getJson('/api/stats')->assertJsonPath('data.guides', 0);
+        $this->artisan('guides:create', ['--remove-samples' => true])->expectsOutput('Removed 6 sample listing(s).');
 
         $this->postJson('/api/guide-applications', [
             'name' => 'Elvin', 'kind' => 'guide', 'email' => 'elvin@example.com',

@@ -15,6 +15,7 @@ use App\Models\Trail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -87,6 +88,45 @@ class TrailController extends Controller
                 ->sortBy(fn (Trail $t) => self::distance2($t->lat, $t->lng, $trail->lat, $trail->lng))
                 ->take(3)->values()
         );
+    }
+
+    /**
+     * The mapped route as GPX 1.1, for Google My Maps, Organic Maps, OsmAnd, Wikiloc and
+     * GPS devices. Each mapped section becomes a track segment; the start is a waypoint.
+     */
+    public function gpx(Trail $trail): Response
+    {
+        abort_unless($trail->status === TrailStatus::Published && $trail->route, 404);
+
+        $e = fn (?string $s) => htmlspecialchars((string) $s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        $name = $e($trail->localized('name', true));
+        $segments = collect($trail->route['coordinates'])
+            ->map(fn (array $line) => "      <trkseg>\n".collect($line)
+                ->map(fn (array $p) => sprintf('        <trkpt lat="%.6f" lon="%.6f"/>', $p[1], $p[0]))
+                ->implode("\n")."\n      </trkseg>")
+            ->implode("\n");
+        $sources = collect($trail->sources ?? [])->map(fn ($s) => "{$s['label']} ({$s['license']})")->implode('; ');
+
+        $xml = <<<GPX
+        <?xml version="1.0" encoding="UTF-8"?>
+        <gpx version="1.1" creator="EcoTrail" xmlns="http://www.topografix.com/GPX/1/1">
+          <metadata>
+            <name>{$name}</name>
+            <desc>{$e($sources)}</desc>
+            <link href="{$e(config('app.frontend_url'))}"><text>EcoTrail</text></link>
+          </metadata>
+          <wpt lat="{$trail->lat}" lon="{$trail->lng}"><name>{$name} — start</name></wpt>
+          <trk>
+            <name>{$name}</name>
+        {$segments}
+          </trk>
+        </gpx>
+        GPX;
+
+        return response($xml, 200, [
+            'Content-Type' => 'application/gpx+xml',
+            'Content-Disposition' => "attachment; filename=\"{$trail->slug}.gpx\"",
+        ]);
     }
 
     public function store(StoreTrailRequest $request, DistrictLocator $locator): JsonResponse

@@ -22,6 +22,7 @@ class GuideResource extends JsonResource
             'phone' => $this->phone,
             'website' => $this->website,
             'is_verified' => $this->is_verified,
+            'is_sample' => $this->is_sample,
         ];
     }
 }

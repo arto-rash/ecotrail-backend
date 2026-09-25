@@ -29,7 +29,7 @@ class ReviewController extends Controller
     {
         $data = $request->validate([
             'author_name' => ['required', 'string', 'min:2', 'max:80'],
-            'rating' => ['required', 'integer', 'between:1,5'],
+            'rating' => ['required', 'numeric', 'between:0.5,5', 'multiple_of:0.5'],
             'body' => ['required', 'string', 'min:10', 'max:2000'],
             // Honeypot: real visitors never see or fill this field.
             'website' => ['prohibited'],
