@@ -13,6 +13,8 @@ COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml -f dock
 if [ "${SKIP_PULL:-0}" != "1" ]; then
   echo "==> pull"
   git pull --ff-only
+  # Bash keeps running the old copy of this file after the pull replaces it; restart with the new one.
+  SKIP_PULL=1 exec "$0" "$@"
 fi
 
 echo "==> build + up"
