@@ -10,8 +10,10 @@ set -a; . ./.env; set +a
 
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.server.yml)
 
-echo "==> pull"
-git pull --ff-only
+if [ "${SKIP_PULL:-0}" != "1" ]; then
+  echo "==> pull"
+  git pull --ff-only
+fi
 
 echo "==> build + up"
 "${COMPOSE[@]}" up -d --build --remove-orphans
