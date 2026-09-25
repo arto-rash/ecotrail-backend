@@ -4,21 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-#[Fillable(['trail_id', 'author_name', 'rating', 'body', 'hiked_on'])]
+#[Fillable(['author_name', 'rating', 'body', 'locale', 'status', 'ip_hash'])]
 class Review extends Model
 {
     protected function casts(): array
     {
-        return [
-            'rating' => 'integer',
-            'hiked_on' => 'date',
-        ];
+        return ['rating' => 'integer'];
     }
 
-    public function trail(): BelongsTo
+    public function reviewable(): MorphTo
     {
-        return $this->belongsTo(Trail::class);
+        return $this->morphTo();
     }
 }

@@ -19,9 +19,6 @@ enum TrailFeature: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::SpringWater => 'Spring water',
-            default => ucfirst($this->value),
-        };
+        return __("enums.feature.{$this->value}");
     }
 }

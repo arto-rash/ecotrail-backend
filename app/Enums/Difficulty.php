@@ -11,6 +11,6 @@ enum Difficulty: string
 
     public function label(): string
     {
-        return ucfirst($this->value);
+        return __("enums.difficulty.{$this->value}");
     }
 }

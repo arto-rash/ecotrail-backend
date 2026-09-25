@@ -10,10 +10,6 @@ enum RouteType: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Loop => 'Loop',
-            self::OutAndBack => 'Out & back',
-            self::PointToPoint => 'Point to point',
-        };
+        return __("enums.route_type.{$this->value}");
     }
 }

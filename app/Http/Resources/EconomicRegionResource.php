@@ -5,17 +5,17 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin \App\Models\Region */
-class RegionResource extends JsonResource
+/** @mixin \App\Models\EconomicRegion */
+class EconomicRegionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
             'slug' => $this->slug,
-            'description' => $this->description,
+            'name' => $this->localized('name', true),
+            'hiking_advised' => $this->hiking_advised,
             'trails_count' => $this->whenCounted('trails'),
+            'places_count' => $this->whenCounted('places'),
         ];
     }
 }

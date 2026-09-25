@@ -18,6 +18,15 @@ fi
 echo "==> build + up"
 "${COMPOSE[@]}" up -d --build --remove-orphans
 
+echo "==> wait for the API (migrations run on boot)"
+for i in $(seq 1 60); do
+  [ "$(docker inspect -f '{{.State.Health.Status}}' "$(${COMPOSE[@]} ps -q api)")" = healthy ] && break
+  sleep 3
+done
+
+echo "==> sync open-data catalogue"
+"${COMPOSE[@]}" exec -T api php artisan catalogue:sync
+
 echo "==> ensure reverse-proxy route for $API_HOST"
 # The route is committed to the proxy project's Caddyfile; this is a fallback in case it goes missing.
 MARKER="# >>> ecotrail-api (managed by ecotrail-backend/deploy/deploy.sh)"

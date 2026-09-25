@@ -14,15 +14,14 @@ class StoreTrailRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'min:3', 'max:120'],
-            'region_id' => ['required', 'integer', 'exists:regions,id'],
             'village' => ['nullable', 'string', 'max:120'],
             'description' => ['required', 'string', 'min:30', 'max:5000'],
             'difficulty' => ['required', Rule::enum(Difficulty::class)],
             'route_type' => ['required', Rule::enum(RouteType::class)],
             'distance_km' => ['required', 'numeric', 'min:0.1', 'max:500'],
             'duration_minutes' => ['required', 'integer', 'min:10', 'max:10080'],
-            'elevation_gain_m' => ['nullable', 'integer', 'min:0', 'max:9000'],
-            'max_altitude_m' => ['nullable', 'integer', 'min:-50', 'max:5500'],
+            'ascent_m' => ['nullable', 'integer', 'min:0', 'max:9000'],
+            'max_ele_m' => ['nullable', 'integer', 'min:-50', 'max:5500'],
             'lat' => ['required', 'numeric', 'between:38.3,41.95'],
             'lng' => ['required', 'numeric', 'between:44.7,50.7'],
             'features' => ['nullable', 'array'],
@@ -39,8 +38,8 @@ class StoreTrailRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'lat.between' => 'The trailhead must be inside Azerbaijan.',
-            'lng.between' => 'The trailhead must be inside Azerbaijan.',
+            'lat.between' => __('The trailhead must be inside Azerbaijan.'),
+            'lng.between' => __('The trailhead must be inside Azerbaijan.'),
         ];
     }
 }

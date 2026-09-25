@@ -15,7 +15,8 @@ class ReviewResource extends JsonResource
             'author_name' => $this->author_name,
             'rating' => $this->rating,
             'body' => $this->body,
-            'hiked_on' => $this->hiked_on?->toDateString(),
+            'locale' => $this->locale,
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

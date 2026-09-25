@@ -5,22 +5,29 @@ namespace App\Models;
 use App\Enums\Difficulty;
 use App\Enums\RouteType;
 use App\Enums\TrailStatus;
+use App\Models\Concerns\HasLocalizedText;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
-    'slug', 'name', 'region_id', 'village', 'summary', 'description',
-    'difficulty', 'route_type', 'distance_km', 'duration_minutes',
-    'elevation_gain_m', 'max_altitude_m', 'lat', 'lng', 'cover_image',
-    'gallery', 'features', 'best_months', 'offline_map', 'waypoints',
-    'status', 'is_featured', 'submitter_name', 'submitter_email',
+    'slug', 'source', 'source_key', 'name', 'summary', 'description', 'district_id',
+    'economic_region_id', 'village', 'difficulty', 'difficulty_basis', 'sac_scale', 'route_type',
+    'distance_km', 'segments', 'duration_minutes', 'ascent_m', 'descent_m', 'min_ele_m',
+    'max_ele_m', 'stats_estimated', 'lat', 'lng', 'route', 'elevation_profile', 'network',
+    'osm_relation_id', 'wikidata_id', 'image_url', 'image_credit', 'gallery', 'features',
+    'waypoints', 'sources', 'status', 'is_featured', 'submitter_name', 'submitter_email',
 ])]
 class Trail extends Model
 {
+    use HasLocalizedText;
+
+    public array $translatable = ['name', 'summary', 'description'];
+
     protected function casts(): array
     {
         return [
@@ -30,11 +37,14 @@ class Trail extends Model
             'distance_km' => 'float',
             'lat' => 'float',
             'lng' => 'float',
+            'route' => 'array',
+            'elevation_profile' => 'array',
+            'image_credit' => 'array',
             'gallery' => 'array',
             'features' => 'array',
-            'best_months' => 'array',
             'waypoints' => 'array',
-            'offline_map' => 'boolean',
+            'sources' => 'array',
+            'stats_estimated' => 'boolean',
             'is_featured' => 'boolean',
         ];
     }
@@ -44,14 +54,24 @@ class Trail extends Model
         return 'slug';
     }
 
-    public function region(): BelongsTo
+    public function district(): BelongsTo
     {
-        return $this->belongsTo(Region::class);
+        return $this->belongsTo(District::class);
     }
 
-    public function reviews(): HasMany
+    public function region(): BelongsTo
     {
-        return $this->hasMany(Review::class)->latest('hiked_on');
+        return $this->belongsTo(EconomicRegion::class, 'economic_region_id');
+    }
+
+    public function places(): BelongsToMany
+    {
+        return $this->belongsToMany(Place::class);
+    }
+
+    public function reviews(): MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable')->where('status', 'published')->latest();
     }
 
     #[Scope]

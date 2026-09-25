@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Catalogue\DistrictLocator;
 use App\Enums\Difficulty;
 use App\Enums\TrailFeature;
 use App\Enums\TrailStatus;
@@ -9,7 +10,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTrailRequest;
 use App\Http\Resources\TrailDetailResource;
 use App\Http\Resources\TrailResource;
+use App\Models\District;
 use App\Models\Trail;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,6 +26,7 @@ class TrailController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'region' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
             'difficulty' => ['nullable', 'array'],
             'difficulty.*' => [Rule::enum(Difficulty::class)],
             'feature' => ['nullable', 'array'],
@@ -31,22 +35,20 @@ class TrailController extends Controller
             'max_distance' => ['nullable', 'numeric', 'min:0'],
             'featured' => ['nullable', 'boolean'],
             'sort' => ['nullable', Rule::in(['popular', 'rating', 'distance', 'duration', 'name'])],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
 
-        $query = Trail::query()->published()->withRating()->with('region');
+        $query = Trail::query()->published()->withRating()->with(['district', 'region']);
 
         if ($q = $filters['q'] ?? null) {
-            $like = '%'.mb_strtolower($q).'%';
-            $query->where(fn ($w) => $w
-                ->whereRaw('lower(name) like ?', [$like])
-                ->orWhereRaw('lower(village) like ?', [$like])
-                ->orWhereRaw('lower(summary) like ?', [$like])
-                ->orWhereHas('region', fn ($r) => $r->whereRaw('lower(name) like ?', [$like])));
+            $query->where(fn (Builder $w) => self::searchName($w, $q)
+                ->orWhereHas('district', fn ($d) => self::searchName($d, $q))
+                ->orWhereHas('region', fn ($r) => self::searchName($r, $q)));
         }
 
         $query
             ->when($filters['region'] ?? null, fn ($w, $slug) => $w->whereHas('region', fn ($r) => $r->where('slug', $slug)))
+            ->when($filters['district'] ?? null, fn ($w, $slug) => $w->whereHas('district', fn ($d) => $d->where('slug', $slug)))
             ->when($filters['difficulty'] ?? null, fn ($w, $d) => $w->whereIn('difficulty', $d))
             ->when($filters['max_duration'] ?? null, fn ($w, $m) => $w->where('duration_minutes', '<=', $m))
             ->when($filters['max_distance'] ?? null, fn ($w, $km) => $w->where('distance_km', '<=', $km))
@@ -60,20 +62,18 @@ class TrailController extends Controller
             'rating' => $query->orderByDesc('reviews_avg_rating'),
             'distance' => $query->orderBy('distance_km'),
             'duration' => $query->orderBy('duration_minutes'),
-            'name' => $query->orderBy('name'),
-            default => $query->orderByDesc('is_featured')->orderByDesc('reviews_count'),
+            'name' => $query->orderBy('name->'.app()->getLocale()),
+            default => $query->orderByDesc('is_featured')->orderByDesc('reviews_count')->orderBy('distance_km'),
         };
 
-        return TrailResource::collection(
-            $query->paginate($filters['per_page'] ?? 24)->withQueryString()
-        );
+        return TrailResource::collection($query->paginate($filters['per_page'] ?? 24)->withQueryString());
     }
 
     public function show(Trail $trail): TrailDetailResource
     {
         abort_unless($trail->status === TrailStatus::Published, 404);
 
-        $trail->load(['region', 'reviews'])->loadAvg('reviews', 'rating')->loadCount('reviews');
+        $trail->load(['district', 'region', 'places.district', 'reviews'])->loadAvg('reviews', 'rating')->loadCount('reviews');
 
         return new TrailDetailResource($trail);
     }
@@ -82,38 +82,58 @@ class TrailController extends Controller
     {
         abort_unless($trail->status === TrailStatus::Published, 404);
 
-        // Equirectangular approximation is plenty for ranking within one country.
-        $nearby = Trail::query()->published()->withRating()->with('region')
-            ->whereKeyNot($trail->id)
-            ->get()
-            ->sortBy(fn (Trail $t) => (($t->lat - $trail->lat) ** 2) + ((($t->lng - $trail->lng) * cos(deg2rad($trail->lat))) ** 2))
-            ->take(3)
-            ->values();
-
-        return TrailResource::collection($nearby);
+        return TrailResource::collection(
+            Trail::query()->published()->withRating()->with(['district', 'region'])->whereKeyNot($trail->id)->get()
+                ->sortBy(fn (Trail $t) => self::distance2($t->lat, $t->lng, $trail->lat, $trail->lng))
+                ->take(3)->values()
+        );
     }
 
-    public function store(StoreTrailRequest $request): JsonResponse
+    public function store(StoreTrailRequest $request, DistrictLocator $locator): JsonResponse
     {
         $data = $request->validated();
+        $locale = app()->getLocale();
+        $found = $locator->locate((float) $data['lng'], (float) $data['lat']);
+        $district = $found ? District::with('region')->where('pcode', $found['pcode'])->first() : null;
 
         $gallery = collect($request->file('photos', []))
             ->map(fn ($file) => '/storage/'.$file->store('trail-submissions', 'public'))
             ->all();
 
         $trail = Trail::create([
-            ...collect($data)->except(['photos', 'region'])->all(),
-            'region_id' => $data['region_id'],
-            'slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(6)),
-            'summary' => Str::limit($data['description'], 270),
-            'cover_image' => $gallery[0] ?? null,
+            ...collect($data)->except(['photos', 'name', 'description'])->all(),
+            'name' => [$locale => $data['name']],
+            'description' => [$locale => $data['description']],
+            'summary' => [$locale => Str::limit($data['description'], 270)],
+            'slug' => Str::slug(Str::ascii($data['name'])).'-'.Str::lower(Str::random(6)),
+            'source' => 'community',
+            'district_id' => $district?->id,
+            'economic_region_id' => $district?->economic_region_id,
+            'difficulty_basis' => 'submitter',
+            'stats_estimated' => false,
+            'image_url' => $gallery[0] ?? null,
             'gallery' => $gallery,
             'status' => TrailStatus::Pending,
         ]);
 
         return response()->json([
-            'message' => 'Thanks! Your trail was submitted for review.',
+            'message' => __('Thanks! Your trail was submitted for review.'),
             'data' => ['slug' => $trail->slug, 'status' => $trail->status],
         ], 201);
+    }
+
+    /** Case-insensitive match on either language of a translatable name. */
+    public static function searchName(Builder $query, string $term): Builder
+    {
+        $like = '%'.mb_strtolower($term).'%';
+
+        return $query->where(fn ($w) => $w
+            ->whereRaw('lower(name->>\'az\') like ?', [$like])
+            ->orWhereRaw('lower(name->>\'en\') like ?', [$like]));
+    }
+
+    public static function distance2(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        return (($lat1 - $lat2) ** 2) + ((($lng1 - $lng2) * cos(deg2rad($lat2))) ** 2);
     }
 }

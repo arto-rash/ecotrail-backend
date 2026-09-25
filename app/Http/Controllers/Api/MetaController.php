@@ -3,13 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Difficulty;
+use App\Enums\PlaceType;
 use App\Enums\RouteType;
 use App\Enums\TrailFeature;
+use App\Enums\TrailStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\DistrictResource;
+use App\Http\Resources\EconomicRegionResource;
 use App\Http\Resources\GuideResource;
-use App\Http\Resources\RegionResource;
+use App\Models\District;
+use App\Models\EconomicRegion;
 use App\Models\Guide;
-use App\Models\Region;
+use App\Models\Place;
 use App\Models\Review;
 use App\Models\Trail;
 use Illuminate\Http\JsonResponse;
@@ -19,16 +24,21 @@ class MetaController extends Controller
 {
     public function regions(): AnonymousResourceCollection
     {
-        return RegionResource::collection(
-            Region::query()->withCount(['trails' => fn ($q) => $q->published()])->orderBy('name')->get()
+        return EconomicRegionResource::collection(
+            EconomicRegion::query()
+                ->withCount(['trails' => fn ($q) => $q->where('status', TrailStatus::Published), 'places'])
+                ->orderBy('sort')->get()
         );
+    }
+
+    public function districts(): AnonymousResourceCollection
+    {
+        return DistrictResource::collection(District::with('region')->orderBy('slug')->get());
     }
 
     public function guides(): AnonymousResourceCollection
     {
-        return GuideResource::collection(
-            Guide::query()->with('region')->orderByDesc('is_verified')->orderByDesc('rating')->get()
-        );
+        return GuideResource::collection(Guide::query()->orderByDesc('is_verified')->orderBy('name')->get());
     }
 
     public function stats(): JsonResponse
@@ -37,9 +47,10 @@ class MetaController extends Controller
 
         return response()->json(['data' => [
             'trails' => (clone $published)->count(),
-            'regions' => (clone $published)->distinct('region_id')->count('region_id'),
-            'total_km' => round((float) (clone $published)->sum('distance_km')),
-            'reviews' => Review::count(),
+            'places' => Place::count(),
+            'regions' => EconomicRegion::query()->whereHas('places')->orWhereHas('trails')->count(),
+            'total_km' => (int) round((float) (clone $published)->where('source', 'osm')->sum('distance_km')),
+            'reviews' => Review::where('status', 'published')->count(),
             'guides' => Guide::count(),
         ]]);
     }
@@ -52,6 +63,7 @@ class MetaController extends Controller
             'difficulties' => $map(Difficulty::cases()),
             'route_types' => $map(RouteType::cases()),
             'features' => $map(TrailFeature::cases()),
+            'place_types' => $map(PlaceType::cases()),
         ]]);
     }
 }
