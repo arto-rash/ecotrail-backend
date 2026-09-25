@@ -22,6 +22,18 @@ All under `/api`. Pass `?lang=az|en` (or `Accept-Language`); Azerbaijani is the 
 
 Data provenance and how to rebuild the catalogue: [`database/data/README.md`](database/data/README.md).
 
+## Admin commands
+
+Run on the server with `sudo docker exec -it ecotrail-api-1 php artisan <command>`.
+
+| Command | What it does |
+|---|---|
+| `submissions:list [--all]` | Community trail submissions (pending by default) |
+| `submissions:approve {slug} [--reject]` | Publish or reject a submission |
+| `reviews:delete --latest=20` / `reviews:delete {id}…` | Find and remove spam reviews |
+| `guides:create [--list-applications] [--from-application=ID]` | List a verified partner guide, optionally prefilled from an application |
+| `catalogue:build` / `catalogue:sync` | Rebuild / load the open-data catalogue |
+
 ## Development
 
 ```sh
