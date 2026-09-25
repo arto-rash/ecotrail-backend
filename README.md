@@ -4,19 +4,23 @@ Laravel 13 JSON API for EcoTrail, a hiking-trail guide to Azerbaijan. The web fr
 
 ## Endpoints
 
-All under `/api`:
+All under `/api`. Pass `?lang=az|en` (or `Accept-Language`); Azerbaijani is the default.
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/trails` | Published trails. Filters: `q`, `region`, `difficulty[]`, `feature[]`, `max_duration`, `max_distance`, `featured`, `sort` (`popular`, `rating`, `distance`, `duration`, `name`), `per_page` |
-| GET | `/trails/{slug}` | Trail detail with reviews |
-| GET | `/trails/{slug}/nearby` | Three closest published trails |
-| POST | `/trails` | Community submission (multipart, photos optional). Saved as `pending`; rate-limited to 10/hour |
-| GET | `/regions` | Regions with published trail counts |
-| GET | `/guides` | Partner guides and agencies |
-| GET | `/stats` | Totals for the home page |
-| GET | `/options` | Difficulty, route-type and feature enums |
-| GET | `/health` | Health check |
+| GET | `/trails` | Filters: `q`, `region`, `district`, `difficulty[]`, `feature[]`, `max_duration`, `max_distance`, `featured`, `sort` |
+| GET | `/trails/{slug}` | Route geometry, elevation profile, nearby places, reviews, sources |
+| GET | `/trails/{slug}/nearby` | Three closest trails |
+| POST | `/trails` | Community submission (saved as pending; district worked out from the coordinates) |
+| GET | `/places` | Waterfalls, lakes, peaks, villages… Filters: `q`, `type[]`, `region`, `district`, `bbox`, `featured`, `sort` |
+| GET | `/places/{slug}` · `/places/{slug}/nearby` | Place detail and neighbours |
+| POST | `/trails/{slug}/reviews` · `/places/{slug}/reviews` | Reviews (honeypot field `website`, rate-limited) |
+| GET | `/map` | GeoJSON of all trail routes and places |
+| GET | `/regions` · `/districts` | 14 economic regions with counts; 74 districts |
+| GET | `/guides` · POST `/guide-applications` | Verified guides; partner applications |
+| GET | `/stats` · `/options` · `/health` | |
+
+Data provenance and how to rebuild the catalogue: [`database/data/README.md`](database/data/README.md).
 
 ## Development
 
@@ -28,10 +32,6 @@ docker compose exec api php artisan migrate --seed
 Or without Docker (SQLite): `composer install && php artisan migrate --seed && php artisan serve`.
 
 Run tests with `php artisan test`.
-
-## Seed data
-
-`database/data/trails.php` holds 13 real Azerbaijani trails. Coordinates, distances and times are **approximate** and should be checked before being treated as authoritative. Reviews and guides in `CatalogueSeeder` are sample data for development.
 
 ## Production
 

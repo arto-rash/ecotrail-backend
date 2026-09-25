@@ -42,7 +42,8 @@ class PlaceController extends Controller
         match ($filters['sort'] ?? 'popular') {
             'name' => $query->orderBy('name->'.app()->getLocale()),
             'elevation' => $query->orderByDesc('ele_m'),
-            default => $query->orderByDesc('is_featured')->orderByRaw('image_url is null')->orderByDesc('reviews_count')->orderBy('id'),
+            // Featured first, then mountain places before lowland ones.
+            default => $query->orderByDesc('is_featured')->orderByDesc('reviews_count')->orderByRaw('ele_m is null')->orderByDesc('ele_m')->orderBy('id'),
         };
 
         return PlaceResource::collection($query->paginate($filters['per_page'] ?? 24)->withQueryString());
