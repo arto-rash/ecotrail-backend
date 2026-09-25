@@ -1,0 +1,25 @@
+# Shared-server overrides: no host ports at all. The API joins an existing
+# reverse proxy's Docker network and is reached by its alias `ecotrail-api`.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.server.yml up -d --build
+services:
+  api:
+    ports: !reset []
+    networks:
+      default:
+      proxy:
+        aliases: [ecotrail-api]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  db:
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?Set PROXY_NETWORK to the reverse proxy's Docker network}

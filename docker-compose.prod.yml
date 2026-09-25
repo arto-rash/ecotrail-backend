@@ -4,10 +4,15 @@ services:
     build:
       target: production
     restart: unless-stopped
-    volumes: !reset []
+    volumes: !override
+      # Community photo uploads survive rebuilds.
+      - storage:/var/www/html/storage/app
     ports: !override
-      - "${API_PORT:-8000}:8080"
+      - "127.0.0.1:${API_PORT:-8000}:8080"
 
   db:
     restart: unless-stopped
     ports: !reset []
+
+volumes:
+  storage:
