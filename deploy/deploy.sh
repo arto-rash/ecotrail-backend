@@ -19,9 +19,9 @@ echo "==> build + up"
 "${COMPOSE[@]}" up -d --build --remove-orphans
 
 echo "==> ensure reverse-proxy route for $API_HOST"
-# The proxy belongs to another project whose deploys reset its Caddyfile, so re-add our block every time.
+# The route is committed to the proxy project's Caddyfile; this is a fallback in case it goes missing.
 MARKER="# >>> ecotrail-api (managed by ecotrail-backend/deploy/deploy.sh)"
-if ! grep -qF "$MARKER" "$PROXY_CADDYFILE"; then
+if ! grep -qE "^${API_HOST//./\\.} \{" "$PROXY_CADDYFILE"; then
   # Append in place (tee -a keeps the inode, so the container's bind mount sees the change).
   TEE=(tee -a); [ -w "$PROXY_CADDYFILE" ] || TEE=(sudo tee -a)
   printf '\n%s\n%s {\n\tencode zstd gzip\n\treverse_proxy ecotrail-api:8080\n}\n# <<< ecotrail-api\n' "$MARKER" "$API_HOST" \
