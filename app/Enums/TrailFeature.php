@@ -2,7 +2,9 @@
 
 namespace App\Enums;
 
-enum TrailFeature: string
+use Filament\Support\Contracts\HasLabel;
+
+enum TrailFeature: string implements HasLabel
 {
     case Waterfall = 'waterfall';
     case Lake = 'lake';
@@ -16,6 +18,11 @@ enum TrailFeature: string
     case River = 'river';
     case Canyon = 'canyon';
     case SpringWater = 'spring_water';
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
 
     public function label(): string
     {

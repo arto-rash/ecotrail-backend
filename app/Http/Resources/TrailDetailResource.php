@@ -25,6 +25,7 @@ class TrailDetailResource extends TrailResource
             'wikidata_id' => $this->wikidata_id,
             'places' => PlaceResource::collection($this->whenLoaded('places')),
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+            'guides' => GuideResource::collection($this->whenLoaded('guides')),
         ];
     }
 }

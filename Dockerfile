@@ -36,7 +36,8 @@ ENV PHP_OPCACHE_ENABLE=1 \
 COPY --chown=www-data:www-data --from=vendor /var/www/html/vendor ./vendor
 COPY --chown=www-data:www-data . .
 
-RUN composer dump-autoload --optimize --no-dev --classmap-authoritative \
-    && php artisan package:discover --ansi
+RUN composer dump-autoload --optimize --no-dev --classmap-authoritative --no-scripts \
+    && php artisan package:discover --ansi \
+    && php artisan filament:assets
 
 EXPOSE 8080

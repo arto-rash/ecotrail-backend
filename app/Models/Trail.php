@@ -69,6 +69,11 @@ class Trail extends Model
         return $this->belongsToMany(Place::class);
     }
 
+    public function guideTours(): BelongsToMany
+    {
+        return $this->belongsToMany(GuideTour::class);
+    }
+
     public function reviews(): MorphMany
     {
         return $this->morphMany(Review::class, 'reviewable')->where('status', 'published')->latest();

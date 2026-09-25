@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enums\TrailStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ReviewResource;
+use App\Models\Guide;
 use App\Models\Place;
 use App\Models\Trail;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,13 @@ class ReviewController extends Controller
         abort_unless($trail->status === TrailStatus::Published, 404);
 
         return $this->store($request, $trail);
+    }
+
+    public function storeForGuide(Request $request, Guide $guide): JsonResponse
+    {
+        abort_unless($guide->is_published, 404);
+
+        return $this->store($request, $guide);
     }
 
     public function storeForPlace(Request $request, Place $place): JsonResponse

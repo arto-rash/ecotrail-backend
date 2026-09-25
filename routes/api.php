@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\GuideApplicationController;
+use App\Http\Controllers\Api\GuideController;
 use App\Http\Controllers\Api\MapController;
 use App\Http\Controllers\Api\MetaController;
 use App\Http\Controllers\Api\PlaceController;
@@ -30,7 +31,10 @@ Route::post('/places/{place}/reviews', [ReviewController::class, 'storeForPlace'
 Route::get('/map', MapController::class);
 Route::get('/regions', [MetaController::class, 'regions']);
 Route::get('/districts', [MetaController::class, 'districts']);
-Route::get('/guides', [MetaController::class, 'guides']);
+Route::get('/guides', [GuideController::class, 'index']);
+Route::get('/guides/{guide}', [GuideController::class, 'show']);
+Route::post('/guides/{guide}/contact', [GuideController::class, 'contact'])->middleware('throttle:30,60');
+Route::post('/guides/{guide}/reviews', [ReviewController::class, 'storeForGuide'])->middleware('throttle:5,60');
 Route::post('/guide-applications', [GuideApplicationController::class, 'store'])->middleware('throttle:5,60');
 Route::get('/stats', [MetaController::class, 'stats']);
 Route::get('/options', [MetaController::class, 'options']);

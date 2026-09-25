@@ -11,6 +11,7 @@ use App\Http\Requests\StoreTrailRequest;
 use App\Http\Resources\TrailDetailResource;
 use App\Http\Resources\TrailResource;
 use App\Models\District;
+use App\Models\Guide;
 use App\Models\Trail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -75,6 +76,9 @@ class TrailController extends Controller
         abort_unless($trail->status === TrailStatus::Published, 404);
 
         $trail->load(['district', 'region', 'places.district', 'reviews'])->loadAvg('reviews', 'rating')->loadCount('reviews');
+        $trail->setRelation('guides', Guide::query()->published()->withRating()->withCount('activeTours')
+            ->whereHas('activeTours.trails', fn ($q) => $q->whereKey($trail->id))
+            ->orderBy('is_sample')->orderByDesc('is_verified')->get());
 
         return new TrailDetailResource($trail);
     }

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\Difficulty;
+use App\Enums\GuideLanguage;
+use App\Enums\GuideSpecialty;
+use App\Enums\PriceUnit;
 use App\Enums\PlaceType;
 use App\Enums\RouteType;
 use App\Enums\TrailFeature;
@@ -10,7 +13,6 @@ use App\Enums\TrailStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DistrictResource;
 use App\Http\Resources\EconomicRegionResource;
-use App\Http\Resources\GuideResource;
 use App\Models\District;
 use App\Models\EconomicRegion;
 use App\Models\Guide;
@@ -36,11 +38,6 @@ class MetaController extends Controller
         return DistrictResource::collection(District::with('region')->orderBy('slug')->get());
     }
 
-    public function guides(): AnonymousResourceCollection
-    {
-        return GuideResource::collection(Guide::query()->orderBy('is_sample')->orderByDesc('is_verified')->orderBy('name')->get());
-    }
-
     public function stats(): JsonResponse
     {
         $published = Trail::query()->published();
@@ -51,7 +48,7 @@ class MetaController extends Controller
             'regions' => EconomicRegion::query()->whereHas('places')->orWhereHas('trails')->count(),
             'total_km' => (int) round((float) (clone $published)->where('source', 'osm')->sum('distance_km')),
             'reviews' => Review::where('status', 'published')->count(),
-            'guides' => Guide::where('is_sample', false)->count(),
+            'guides' => Guide::published()->where('is_sample', false)->count(),
         ]]);
     }
 
@@ -64,6 +61,9 @@ class MetaController extends Controller
             'route_types' => $map(RouteType::cases()),
             'features' => $map(TrailFeature::cases()),
             'place_types' => $map(PlaceType::cases()),
+            'guide_specialties' => $map(GuideSpecialty::cases()),
+            'guide_languages' => $map(GuideLanguage::cases()),
+            'price_units' => $map(PriceUnit::cases()),
         ]]);
     }
 }

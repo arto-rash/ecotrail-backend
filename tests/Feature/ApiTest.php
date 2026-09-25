@@ -145,17 +145,18 @@ class ApiTest extends TestCase
 
     public function test_guide_applications_and_stats(): void
     {
+        \App\Http\Resources\GuideResource::flushCache();
         $this->getJson('/api/guides')->assertOk()->assertJsonCount(0, 'data');
 
         $this->seed(\Database\Seeders\SampleGuidesSeeder::class);
         $this->getJson('/api/guides?lang=az')->assertJsonCount(6, 'data')
             ->assertJsonPath('data.0.is_sample', true)->assertJsonPath('data.0.email', null)->assertJsonPath('data.0.is_verified', false);
         $this->getJson('/api/stats')->assertJsonPath('data.guides', 0);
-        $this->artisan('guides:create', ['--remove-samples' => true])->expectsOutput('Removed 6 sample listing(s).');
+        $this->artisan('guides:remove-samples')->expectsOutput('Removed 6 sample listing(s).');
 
         $this->postJson('/api/guide-applications', [
             'name' => 'Elvin', 'kind' => 'guide', 'email' => 'elvin@example.com',
-            'regions' => ['guba-khachmaz'], 'languages' => ['Azərbaycan', 'English'],
+            'regions' => ['guba-khachmaz'], 'languages' => ['az', 'en'], 'experience_years' => 9, 'specialties' => ['summits'],
             'message' => 'Licensed mountain guide working around Shahdag for years.',
         ])->assertCreated();
         $this->assertSame(1, GuideApplication::count());

@@ -2,12 +2,19 @@
 
 namespace App\Enums;
 
-enum Difficulty: string
+use Filament\Support\Contracts\HasLabel;
+
+enum Difficulty: string implements HasLabel
 {
     case Easy = 'easy';
     case Moderate = 'moderate';
     case Hard = 'hard';
     case Expert = 'expert';
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
 
     public function label(): string
     {

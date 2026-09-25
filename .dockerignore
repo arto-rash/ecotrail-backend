@@ -16,3 +16,7 @@ tests
 docker-compose*.yml
 .phpunit.cache
 .server
+bootstrap/cache/*.php
+public/js/filament
+public/css/filament
+public/fonts/filament

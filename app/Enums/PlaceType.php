@@ -2,7 +2,9 @@
 
 namespace App\Enums;
 
-enum PlaceType: string
+use Filament\Support\Contracts\HasLabel;
+
+enum PlaceType: string implements HasLabel
 {
     case Waterfall = 'waterfall';
     case Lake = 'lake';
@@ -10,6 +12,11 @@ enum PlaceType: string
     case Village = 'village';
     case Historic = 'historic';
     case Park = 'park';
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
 
     public function label(): string
     {
