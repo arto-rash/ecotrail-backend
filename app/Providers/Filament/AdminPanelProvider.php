@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('EcoTrail admin')
+            ->font('Geologica')
             ->colors([
                 'primary' => Color::hex('#285237'),
                 'danger' => Color::hex('#b4432a'),
