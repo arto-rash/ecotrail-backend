@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 
 ############################################
-# Base: PHP 8.4 + Nginx + PHP-FPM (serversideup)
+# Base: PHP 8.4.28 + Nginx 1.30.7 + PHP-FPM (serversideup v5.1.5)
 ############################################
-FROM serversideup/php:8.4-fpm-nginx AS base
+FROM serversideup/php:8.4.28-fpm-nginx-v5.1.5 AS base
 
 USER root
 RUN install-php-extensions intl bcmath pdo_pgsql
